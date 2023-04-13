@@ -369,17 +369,16 @@ function atcb_copy_to_clipboard(dataString) {
   tmpInput.value = dataString;
   tmpInput.contentEditable = true;
   tmpInput.readOnly = false;
-  if (isiOS()) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(dataString);
+    tmpInput.select();
+  } else if (isiOS()) {
     var range = document.createRange();
     range.selectNodeContents(tmpInput);
     var selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
     tmpInput.setSelectionRange(0, 999999);
-  } else {
-    // the next 2 lines are basically doing the same in different ways (just to be sure)
-    navigator.clipboard.writeText(dataString);
-    tmpInput.select();
   }
   tmpInput.contentEditable = editable;
   tmpInput.readOnly = readOnly;
