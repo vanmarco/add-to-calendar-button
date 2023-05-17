@@ -370,7 +370,7 @@ function atcb_generate_uuid() {
 }
 
 // SHARED FUNCTION TO COPY TO CLIPBOARD
-function atcb_copy_to_clipboard(dataString) {
+async function atcb_copy_to_clipboard(dataString) {
   const tmpInput = document.createElement('input');
   document.body.append(tmpInput);
   const editable = tmpInput.contentEditable;
@@ -379,8 +379,11 @@ function atcb_copy_to_clipboard(dataString) {
   tmpInput.contentEditable = true;
   tmpInput.readOnly = false;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(dataString);
+    await navigator.clipboard.writeText(dataString);
     tmpInput.select();
+    tmpInput.contentEditable = editable;
+    tmpInput.readOnly = readOnly;
+    tmpInput.remove();
   } else if (isiOS()) {
     var range = document.createRange();
     range.selectNodeContents(tmpInput);
@@ -388,11 +391,11 @@ function atcb_copy_to_clipboard(dataString) {
     selection.removeAllRanges();
     selection.addRange(range);
     tmpInput.setSelectionRange(0, 999999);
+    tmpInput.contentEditable = editable;
+    tmpInput.readOnly = readOnly;
+    document.execCommand('copy');
+    tmpInput.remove();
   }
-  tmpInput.contentEditable = editable;
-  tmpInput.readOnly = readOnly;
-  document.execCommand('copy');
-  tmpInput.remove();
 }
 
 // SHARED DEBOUNCE FUNCTIONS
