@@ -3,7 +3,7 @@
  *  Add to Calendar Button
  *  ++++++++++++++++++++++
  *
- *  Version: 2.2.5
+ *  Version: 2.2.8
  *  Creator: Jens Kuerschner (https://jenskuerschner.de)
  *  Project: https://github.com/add2cal/add-to-calendar-button
  *  License: Elastic License 2.0 (ELv2) (https://github.com/add2cal/add-to-calendar-button/blob/main/LICENSE.txt)
@@ -12,7 +12,7 @@
  */
 
 import { tzlib_get_ical_block } from 'timezones-ical-library';
-import { atcbVersion, isiOS, isAndroid, isChrome, isMobile, isWebView, isProblematicWebView, atcbDefaultTarget, atcbStates } from './atcb-globals.js';
+import { atcbVersion, isiOS, isAndroid, isChrome, isWebView, isProblematicWebView, atcbDefaultTarget, atcbStates } from './atcb-globals.js';
 import { atcb_toggle } from './atcb-control.js';
 import { atcb_saved_hook, atcb_save_file, atcb_generate_time, atcb_format_datetime, atcb_secure_url, atcb_copy_to_clipboard, atcb_rewrite_ical_text } from './atcb-util.js';
 import { atcb_create_modal } from './atcb-generate.js';
@@ -24,10 +24,6 @@ function atcb_generate_links(host, type, data, subEvent = 'all', keyboardTrigger
   let linkType = type;
   // the apple type would trigger the same as ical, for example
   if (type == 'apple') {
-    linkType = 'ical';
-  }
-  // TMP WORKAROUND: redirect to iCal solution on mobile devices for msteams, ms365, and outlookcom, since the Microsoft web apps are buggy on mobile devices (see https://github.com/add2cal/add-to-calendar-button/discussions/113)
-  if (isMobile() && (type == 'msteams' || type == 'ms365' || type == 'outlookcom')) {
     linkType = 'ical';
   }
   // adjust for subEvent and case
@@ -235,7 +231,8 @@ function atcb_generate_google(data) {
   const formattedDate = atcb_generate_time(data, 'clean', 'google');
   urlParts.push('dates=' + encodeURIComponent(formattedDate.start) + '%2F' + encodeURIComponent(formattedDate.end));
   // setting time zone if given and not GMT +/- something, since this is not supported by Google Calendar
-  if (data.timeZone != null && data.timeZone != '' && !/(GMT[+|-]\d{1,2}|Etc\/U|Etc\/Zulu|CET|CST6CDT|EET|EST|EST5EDT|MET|MST|MST7MDT|PST8PDT|WET)/i.test(data.timeZone)) {
+  // also do not set for all-day events, since this can lead to Google Calendar trying to adjust times
+  if (data.timeZone != null && data.timeZone != '' && !/(GMT[+|-]\d{1,2}|Etc\/U|Etc\/Zulu|CET|CST6CDT|EET|EST|EST5EDT|MET|MST|MST7MDT|PST8PDT|WET)/i.test(data.timeZone) && !formattedDate.allday) {
     urlParts.push('ctz=' + data.timeZone);
   }
   // add details (if set)
@@ -307,7 +304,7 @@ function atcb_generate_yahoo(data) {
 // See specs at: TODO: add some documentation here, if it exists
 function atcb_generate_microsoft(data, type = '365') {
   const urlParts = [];
-  const basePath = '/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent';
+  const basePath = '/calendar/action/compose?rru=addevent';
   const baseUrl = (function () {
     if (type == 'outlook') {
       return 'https://outlook.live.com' + basePath;
@@ -317,9 +314,9 @@ function atcb_generate_microsoft(data, type = '365') {
   })();
   urlParts.push(baseUrl);
   // generate and add date
-  const formattedDate = atcb_generate_time(data, 'delimiters', 'microsoft');
-  urlParts.push('startdt=' + encodeURIComponent(formattedDate.start));
-  urlParts.push('enddt=' + encodeURIComponent(formattedDate.end));
+  const formattedDate = atcb_generate_time(data, 'delimiters', 'microsoft', true);
+  urlParts.push('startdt=' + formattedDate.start);
+  urlParts.push('enddt=' + formattedDate.end);
   if (formattedDate.allday) {
     urlParts.push('allday=true');
   }
@@ -339,15 +336,21 @@ function atcb_generate_microsoft(data, type = '365') {
 }
 
 // FUNCTION TO GENERATE THE MICROSOFT TEAMS URL
-// See specs at: https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/build-and-test/deep-links#deep-linking-to-the-scheduling-dialog
+// See specs at: https://learn.microsoft.com/en-us/microsoftteams/platform/concepts/build-and-test/deep-link-workflow?tabs=teamsjs-v2#deep-link-to-open-a-meeting-scheduling-dialog
 // Mind that this is still in development mode by Microsoft! Location, html tags and linebreaks in the description are not supported yet.
 function atcb_generate_msteams(data) {
   const urlParts = [];
   const baseUrl = 'https://teams.microsoft.com/l/meeting/new?';
   // generate and add date
-  const formattedDate = atcb_generate_time(data, 'delimiters', 'microsoft');
-  urlParts.push('startTime=' + encodeURIComponent(formattedDate.start));
-  urlParts.push('endTime=' + encodeURIComponent(formattedDate.end));
+  const formattedDate = atcb_generate_time(data, 'delimiters', 'msteams', true);
+  // we need to encode the date, but not for all-day events to not encode the plus for the offset (somehow strange, but this all consists somehow of workarounds with the Microsoft Teams url scheme)...
+  if (!formattedDate.allday) {
+    urlParts.push('startTime=' + encodeURIComponent(formattedDate.start));
+    urlParts.push('endTime=' + encodeURIComponent(formattedDate.end));
+  } else {
+    urlParts.push('startTime=' + formattedDate.start);
+    urlParts.push('endTime=' + formattedDate.end);
+  }
   // add details (if set)
   if (data.name != null && data.name != '') {
     urlParts.push('subject=' + encodeURIComponent(data.name));
