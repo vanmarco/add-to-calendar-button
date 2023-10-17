@@ -65,10 +65,8 @@ const isChrome = isBrowser()
 const isBraveiOS = isBrowser()
 ? () => {
     if (/Version\/\d+\.\d+(?!\.)/i.test(navigator.userAgent || navigator.vendor)) {
-      alert('isBraveiOS')
       return true;
     } else {
-      alert('isNotBraveiOS')
       return false;
     }
   }
@@ -250,6 +248,8 @@ export {
   isiOS,
   isAndroid,
   isChrome,
+  isFirefox,
+  isBraveiOS,
   isMobile,
   isWebView,
   isProblematicWebView,
