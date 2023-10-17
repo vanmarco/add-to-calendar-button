@@ -539,7 +539,7 @@ function atcb_ical_copy_note(host, dataUrl, data, keyboardTrigger) {
   // putting the download url to the clipboard
   atcb_copy_to_clipboard(dataUrl);
   // creating the modal
-  if (isiOS() && isChrome()) {
+  if (isiOS() && (isChrome() || isFirefox() || isBraveiOS())) {
     atcb_create_modal(host, data, 'warning', atcb_translate_hook('modal.crios.ical.h', data), atcb_translate_hook('modal.crios.ical.text', data) + '<br>' + atcb_translate_hook('modal.clipboard.text', data) + '<br>' + atcb_translate_hook('modal.crios.ical.steps', data), [], [], keyboardTrigger);
     return;
   }

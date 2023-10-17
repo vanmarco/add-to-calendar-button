@@ -61,6 +61,32 @@ const isChrome = isBrowser()
   : () => {
       return false;
     };
+// Brave
+const isBraveiOS = isBrowser()
+? () => {
+    if (/Version\/\d+\.\d+(?!\.)/i.test(navigator.userAgent || navigator.vendor)) {
+      alert('isBraveiOS')
+      return true;
+    } else {
+      alert('isNotBraveiOS')
+      return false;
+    }
+  }
+: () => {
+    return false;
+  };
+// Firefox
+const isFirefox = isBrowser()
+? () => {
+    if (/firefox|fxios/i.test(navigator.userAgent || navigator.vendor)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+: () => {
+    return false;
+  };
 // Mobile
 const isMobile = () => {
   if (isAndroid() || isiOS()) {
